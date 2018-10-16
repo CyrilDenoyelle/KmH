@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import { Platform, View, Text, StyleSheet, ImageBackground, TouchableHighlight, Dimensions, PixelRatio} from 'react-native';
 import { Constants, Location, Permissions, KeepAwake, Font } from 'expo';
 
-import './apikey';
+const mapquestapikey =require('./apikey.js');
+const ApiKey = mapquestapikey.ApiKey
 const mapQuest = "http://www.mapquestapi.com/geocoding/v1/reverse?key=";
 const options = "&includeRoadMetadata=true&thumbMaps=false";
 let displayC;
@@ -32,13 +33,22 @@ class KmH extends Component {
     super(props);
 
     this.state = {
+      lastLatitude: null,
+      lastLongitude: null,
       latitude: null,
       longitude: null,
-      speed: 130,
+      speed: 0,
+      lastSpeed: null,
+      speedDisplay: 0,
+      currentTime: null,
+      lastTime: null,
+      acceleration: 1,
       maxSpeed: '?',
       maxSpeedActive: true,
+      maxSpeedInterval: null,
       activeColor: null,
       error: null,
+      errorMessage: null,
       fontLoaded: false,
       speedColor: 'green'
     };
@@ -64,6 +74,7 @@ class KmH extends Component {
 
   
   async componentDidMount() {
+
     //Charge la font digital
     await Font.loadAsync({
       'digital': require('./assets/fonts/digital-7.ttf')
@@ -75,86 +86,143 @@ class KmH extends Component {
       if(this.state.maxSpeedActive == false){
         this.setState({
           maxSpeedActive : true,
-          activeColor : 'white'
+          activeColor : 'white',
+          maxSpeedInterval: setInterval(this.funcMaxSpeed,20000)
         })
+        //let _interval = setInterval(this.funcMaxSpeed,20000)
         console.log('requete vitesse limite max activée')
-        //Requete de la vitesse maxi dans la zone en cours
-        this._interval = setInterval(() => {
-          if(this.state.latitude != null & this.state.longitude != null){
-          fetch(`${mapQuest}${ApiKey}&${this.state.latitude},${this.state.longitude}${options}`, {
-            method: 'GET',
-          })
-          .then((response) => response.json())
-          .then((responseJson) => {
-            if(responseJson.results[0].locations[0].roadMetadata.speedLimit != null){
-              this.setState({
-                  maxSpeed : responseJson.results[0].locations[0].roadMetadata.speedLimit
-              });
-              console.log('MAXSPEED',this.state.maxSpeed)
-            } else {
-              this.setState({
-                maxSpeed : '?'
-            });
-            }
-          })
-          .catch((error) => { 
-            this.setState({
-              maxSpeed : ''
-          });
-            console.log(error);});
-        }}, 20000);
       } else {
         this.setState({
           maxSpeedActive : false,
-          activeColor : 'black'
+          activeColor : 'black',
+          maxSpeedInterval: clearInterval(this.state.maxSpeedInterval)
         })
-        clearInterval(this._interval);
+        //clearInterval(_interval);
         console.log('requete vitesse limite max désactivée')
       }
     }
-    
-    //Requete de la vitesse du vehicule
-    this.watchId = await Location.watchPositionAsync({ enableHighAccuracy: true, timeout: 1000, distanceInterval: 1},
-      (position) => {
-        this.setState({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          speed: Math.round(position.coords.speed*3.6),
-          error: null,
+
+    //Requete de la vitesse maxi dans la zone en cours
+    //this._interval = setInterval(() => {
+      
+      this.funcMaxSpeed = ()=>{
+        //function funcMaxSpeed(){
+      console.log("requete vitesse maxi !!!")
+      if(this.state.latitude != null & this.state.longitude != null){
+        console.log("here!!!")
+      fetch(`${mapQuest}${ApiKey}&${this.state.latitude},${this.state.longitude}${options}`, {
+        method: 'GET',
+      })
+      .then((response) => response.json())
+      .then((responseJson) => {
+        if(responseJson.results[0].locations[0].roadMetadata.speedLimit != null){
+          console.log(responseJson.results[0].locations[0])
+          this.setState({
+              maxSpeed : responseJson.results[0].locations[0].roadMetadata.speedLimit
+          });
+          console.log('MAXSPEED',this.state.maxSpeed)
+        } else {
+          this.setState({
+            maxSpeed : '?'
         });
-        //console.log(this.state.latitude, this.state.longitude)
+        console.log("no result")
+        }
+      })
+      .catch((error) => { 
+        this.setState({
+          maxSpeed : '?'
+      });
+      if(this.state.maxSpeedActive == false){
+        clearInterval(this.funcMaxSpeed);
+      }
+        console.log(error);});
+    //}}, 20000);
+    }}
+    //Requete de la vitesse du vehicule
+    this.watchId = await Location.watchPositionAsync({ enableHighAccuracy: true, timeout: 1000, distanceInterval: 0},
+      (position) => {
+        let lat = +(position.coords.latitude).toFixed(5)
+        let lon = +(position.coords.longitude).toFixed(5)
+        //console.log('lat:',lat,'lon:',lon)
+        if(this.state.lastLatitude == null){
+          this.setState({
+            lastLatitude: +(position.coords.latitude).toFixed(5),
+            lastLongitude: +(position.coords.latitude).toFixed(5),
+            //currentTime: position.timestamp,
+            //lastTime: position.timestamp,
+            lastSpeed: 0
+          })
+        }
+        if(Math.abs(lat-this.state.lastLatitude) > 0 || Math.abs(lon-this.state.lastLongitude) > 0 ){
+          //Calcul de a a revoir pour eviter les NaN et infinity
+          //let a = Math.sqrt(Math.round(position.coords.speed*3.6) - this.state.lastSpeed)/((this.state.currentTime - this.state.lastTime)/1000)*100;
+          //console.log('A: ',a,'|', this.state.acceleration)
+          //console.log(this.state.currentTime)
+          this.setState({
+            //lastTime: this.state.currentTime,
+            //currentTime: position.timestamp,
+            lastLatitude: this.state.latitude,
+            lastLongitude: this.state.longitude, 
+            latitude: lat,
+            longitude: lon,
+            lastSpeed: this.state.speed,
+            speed: Math.round(position.coords.speed*3.6),
+            //acceleration: Math.ceil(a)+1,
+            error: null,
+          });
+        } else {
+          console.log("Rejected | lat:",lat,',lon:',lon,' Difference:',Math.abs(lat-this.state.lastLatitude),',',Math.abs(lon-this.state.lastLongitude),'speed:',this.state.speed)
+        }
+        //console.log('speed:',this.state.speed);
+
       },
       (error) => this.setState({ error: error.message })
     );
-  }
+    //Incrementation du compteur de facon realiste
+    this._intervalDisplay = setInterval(() => {
+      if (this.state.speedDisplay < this.state.speed) {
+        this.setState({
+          speedDisplay: this.state.speedDisplay+1
+        })
+      } else if (this.state.speedDisplay > this.state.speed) {
+        this.setState({
+          speedDisplay: this.state.speedDisplay-1
+        })
+      }
+      }, 50); //this.state.acceleration a remettre une fois resolu
+    };
+  
 
   componentWillUnmount() {
     //navigator.geolocation.clearWatch(this.watchId);
-    clearInterval(this._interval);
+    //clearInterval(this._interval);
+    this.setState({maxSpeedInterval: clearInterval(this.state.maxSpeedInterval)})
+    clearInterval(this._intervalDisplay);
   }
 
   render() {
     console.log('Lat: ',this.state.latitude,this.state.longitude)
+    //console.log(this.state.speedDisplay)
     //Séparation et affichage des caractères de la vitesse
-    displayU = this.state.speed%10
+    displayU = this.state.speedDisplay%10
     if(this.state.speed > 10){
-      displayD = Math.round(this.state.speed%100/10)
+      displayD = Math.floor(this.state.speedDisplay%100/10)
     } else {
       displayD = ''
     }
     if(this.state.speed > 100){
-      displayC = Math.floor(this.state.speed/100)
+      displayC = Math.floor(this.state.speedDisplay/100)
     } else {
       displayC = ''
     }
     //Couleur des caractéres de la vitesse
-    if(this.state.maxSpeed == '' || this.state.speed < this.state.maxSpeed){
+    if(this.state.maxSpeed == '' || this.state.speedDisplay < this.state.maxSpeed){
       this.state.speedColor = 'green'
     }
-    if(this.state.maxSpeed != '' && this.state.speed > this.state.maxSpeed){
+    if(this.state.maxSpeed != '' && this.state.speedDisplay > this.state.maxSpeed){
       this.state.speedColor = 'orange'
     }
-    if(this.state.maxSpeed != '' && this.state.speed > this.state.maxSpeed+5){
+    if(this.state.maxSpeed != '' && this.state.speedDisplay > this.state.maxSpeed+5){
       this.state.speedColor = 'red'
     }
 
@@ -212,7 +280,7 @@ class KmH extends Component {
                 //borderColor: 'green',
                 //borderWidth: 1,
               }}>
-              <TouchableHighlight  onPress={this._onPressButton}>
+              <TouchableHighlight  onPress={() =>this._onPressButton()}>
               <Text style={{fontSize: heightPercentageToDP('10%')}} >{this.state.maxSpeed}</Text>
               </TouchableHighlight>
               </View>
