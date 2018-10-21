@@ -50,7 +50,8 @@ class KmH extends Component {
       error: null,
       errorMessage: null,
       fontLoaded: false,
-      speedColor: 'green'
+      speedColor: 'green',
+      hourMinutes:''
     };
   }
   componentWillMount(){
@@ -139,7 +140,7 @@ class KmH extends Component {
     //}}, 20000);
     }}
     //Requete de la vitesse du vehicule
-    this.watchId = await Location.watchPositionAsync({ enableHighAccuracy: true, timeout: 1000, distanceInterval: 0},
+    this.watchId = await Location.watchPositionAsync({ enableHighAccuracy: true, timeout: 1000, distanceInterval: 1},
       (position) => {
         let lat = +(position.coords.latitude).toFixed(5)
         let lon = +(position.coords.longitude).toFixed(5)
@@ -148,6 +149,7 @@ class KmH extends Component {
           this.setState({
             lastLatitude: +(position.coords.latitude).toFixed(5),
             lastLongitude: +(position.coords.latitude).toFixed(5),
+            
             //currentTime: position.timestamp,
             //lastTime: position.timestamp,
             lastSpeed: 0
@@ -158,6 +160,8 @@ class KmH extends Component {
           //let a = Math.sqrt(Math.round(position.coords.speed*3.6) - this.state.lastSpeed)/((this.state.currentTime - this.state.lastTime)/1000)*100;
           //console.log('A: ',a,'|', this.state.acceleration)
           //console.log(this.state.currentTime)
+          let t = new Date(position.timestamp).toLocaleTimeString("fr-FR");
+          t = t.substring(0, t.length-3);
           this.setState({
             //lastTime: this.state.currentTime,
             //currentTime: position.timestamp,
@@ -167,6 +171,7 @@ class KmH extends Component {
             longitude: lon,
             lastSpeed: this.state.speed,
             speed: Math.round(position.coords.speed*3.6),
+            hourMinutes: t,
             //acceleration: Math.ceil(a)+1,
             error: null,
           });
@@ -229,7 +234,7 @@ class KmH extends Component {
     return (
       <View style={{
         flex: 1,
-        alignItems: 'flex-end',
+        //alignItems: 'center',
         backgroundColor: 'black',
       }}> 
       <KeepAwake /> 
@@ -238,7 +243,6 @@ class KmH extends Component {
               <View style={{
                 width: widthPercentageToDP('100%'),
                 height: heightPercentageToDP('70%'),
-                
               }}>
               <View style={{
                 flex:1,
@@ -259,6 +263,20 @@ class KmH extends Component {
               </View>
             ):null
           }
+          
+          <View style={{
+                flex:1,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                //borderColor: 'green',
+                //borderWidth: 1,
+              }}>
+              {
+            this.state.fontLoaded ? (
+              <Text style={{fontSize: heightPercentageToDP('10%'),fontFamily: 'digital',fontSize: heightPercentageToDP('20%'),color:'white',marginLeft:widthPercentageToDP('5%')}} >{this.state.hourMinutes}</Text>
+              ):null
+              }
             <View style={{
             width: heightPercentageToDP('30%'),
             height: heightPercentageToDP('30%'),
@@ -285,6 +303,7 @@ class KmH extends Component {
               </TouchableHighlight>
               </View>
              
+            </View>
             </View>
       </View>
     );
