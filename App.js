@@ -90,7 +90,6 @@ class KmH extends Component {
           activeColor : 'white',
           maxSpeedInterval: setInterval(this.funcMaxSpeed,20000)
         })
-        //let _interval = setInterval(this.funcMaxSpeed,20000)
         console.log('requete vitesse limite max activée')
       } else {
         this.setState({
@@ -98,19 +97,16 @@ class KmH extends Component {
           activeColor : 'black',
           maxSpeedInterval: clearInterval(this.state.maxSpeedInterval)
         })
-        //clearInterval(_interval);
         console.log('requete vitesse limite max désactivée')
       }
     }
 
     //Requete de la vitesse maxi dans la zone en cours
-    //this._interval = setInterval(() => {
-      
       this.funcMaxSpeed = ()=>{
-        //function funcMaxSpeed(){
       console.log("requete vitesse maxi !!!")
       if(this.state.latitude != null & this.state.longitude != null){
         console.log("here!!!")
+        //https://www.overpass-api.de/api/interpreter?data=[out:json];node[highway=speed_camera](43.46669501043081,-5.708215989569187,43.588927989569186,-5.605835010430813);out%20meta;
       fetch(`${mapQuest}${ApiKey}&${this.state.latitude},${this.state.longitude}${options}`, {
         method: 'GET',
       })
@@ -137,7 +133,6 @@ class KmH extends Component {
         clearInterval(this.funcMaxSpeed);
       }
         console.log(error);});
-    //}}, 20000);
     }}
     //Requete de la vitesse du vehicule
     this.watchId = await Location.watchPositionAsync({ enableHighAccuracy: true, timeout: 1000, distanceInterval: 1},
@@ -149,22 +144,13 @@ class KmH extends Component {
           this.setState({
             lastLatitude: +(position.coords.latitude).toFixed(5),
             lastLongitude: +(position.coords.latitude).toFixed(5),
-            
-            //currentTime: position.timestamp,
-            //lastTime: position.timestamp,
             lastSpeed: 0
           })
         }
         if(Math.abs(lat-this.state.lastLatitude) > 0 || Math.abs(lon-this.state.lastLongitude) > 0 ){
-          //Calcul de a a revoir pour eviter les NaN et infinity
-          //let a = Math.sqrt(Math.round(position.coords.speed*3.6) - this.state.lastSpeed)/((this.state.currentTime - this.state.lastTime)/1000)*100;
-          //console.log('A: ',a,'|', this.state.acceleration)
-          //console.log(this.state.currentTime)
           let t = new Date(position.timestamp).toLocaleTimeString("fr-FR");
           t = t.substring(0, t.length-3);
           this.setState({
-            //lastTime: this.state.currentTime,
-            //currentTime: position.timestamp,
             lastLatitude: this.state.latitude,
             lastLongitude: this.state.longitude, 
             latitude: lat,
@@ -172,14 +158,11 @@ class KmH extends Component {
             lastSpeed: this.state.speed,
             speed: Math.round(position.coords.speed*3.6),
             hourMinutes: t,
-            //acceleration: Math.ceil(a)+1,
             error: null,
           });
         } else {
           console.log("Rejected | lat:",lat,',lon:',lon,' Difference:',Math.abs(lat-this.state.lastLatitude),',',Math.abs(lon-this.state.lastLongitude),'speed:',this.state.speed)
         }
-        //console.log('speed:',this.state.speed);
-
       },
       (error) => this.setState({ error: error.message })
     );
@@ -194,13 +177,11 @@ class KmH extends Component {
           speedDisplay: this.state.speedDisplay-1
         })
       }
-      }, 50); //this.state.acceleration a remettre une fois resolu
+      }, 50); 
     };
   
 
   componentWillUnmount() {
-    //navigator.geolocation.clearWatch(this.watchId);
-    //clearInterval(this._interval);
     this.setState({maxSpeedInterval: clearInterval(this.state.maxSpeedInterval)})
     clearInterval(this._intervalDisplay);
   }
@@ -234,7 +215,6 @@ class KmH extends Component {
     return (
       <View style={{
         flex: 1,
-        //alignItems: 'center',
         backgroundColor: 'black',
       }}> 
       <KeepAwake /> 
@@ -249,8 +229,6 @@ class KmH extends Component {
                 flexDirection: 'row',
                 justifyContent: 'center',
                 alignItems: 'center',
-                //borderColor: 'green',
-                //borderWidth: 1,
               }}>
                   <Text style={[styles.vitesse, {color: this.state.speedColor}]}>{displayC}</Text>
                   <Text style={[styles.vitesse, {color: this.state.speedColor}]}>{displayD}</Text>
@@ -269,8 +247,6 @@ class KmH extends Component {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                //borderColor: 'green',
-                //borderWidth: 1,
               }}>
               {
             this.state.fontLoaded ? (
@@ -283,7 +259,6 @@ class KmH extends Component {
             borderColor: 'red',
             borderWidth: heightPercentageToDP('5%'),
             borderRadius:360,
-            //backgroundColor:this.state.activeColor,
             backgroundColor: 'white'
             }}>
             
@@ -295,8 +270,6 @@ class KmH extends Component {
                 backgroundColor: this.state.activeColor,
                 borderWidth:0,
                 borderRadius:360
-                //borderColor: 'green',
-                //borderWidth: 1,
               }}>
               <TouchableHighlight  onPress={() =>this._onPressButton()}>
               <Text style={{fontSize: heightPercentageToDP('10%')}} >{this.state.maxSpeed}</Text>
